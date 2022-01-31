@@ -42,8 +42,8 @@ class ampifyPackParser(object):
         if len(output) == 0:
             print("There were no packs of this genre.")
         else:
-            print(len(output))
             for obj in output:
+                print("\n")
                 self.prettyPrintObject(obj)
 
 

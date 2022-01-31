@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <iomanip>
+#include <stdexcept>
 
 class Tokeniser
 {
@@ -61,6 +62,8 @@ private:
     
     double findConst(std::string input) const
     {
+        //removes any spaces in string vers of consts
+        input.erase(std::remove_if(input.begin(), input.end(), isspace));
         if (input == "pi")
             return 3.14159265;
         if (input == "root 2")
@@ -72,13 +75,17 @@ private:
     
     std::optional <double> findAndExtractLHS (std::string input, std::string character) const
     {
-        input.erase(std::remove_if(input.begin(), input.end(), isspace));
         auto pos = input.find (character);
         auto anyConst = findConst(input.substr (0, pos));
         if (anyConst != 0.0)
             return anyConst;
         if (pos != std::string::npos)
-            return std::stod (input.substr (0, pos));
+            try{
+                return std::stod (input.substr (0, pos));
+            } catch(std::exception& e)
+            {
+                return{};
+            }
             
         return {};
     }
@@ -86,12 +93,16 @@ private:
     std::optional <double> findAndExtractRHS (std::string input, std::string character) const
     {
         auto pos = input.find (character);
-        input.erase(std::remove_if(input.begin(), input.end()-1, isspace));
         auto anyConst = findConst(input.substr (pos + 1));
         if (anyConst != 0.0)
             return anyConst;
         if (auto pos = input.find (character); pos != std::string::npos)
-            return std::stod (input.substr (pos + 1));
+            try{
+                return std::stod (input.substr (pos + 1));
+            } catch(std::exception& e)
+            {
+                return{};
+            }
         return {};
     }
 
@@ -147,7 +158,7 @@ public:
     Calculator () = default;
     ~Calculator () = default;
     
-    double calculate (Tokeniser::TokenList tokens) const
+    std::optional <double>  calculate (Tokeniser::TokenList tokens) const
     {
         switch (tokens.type)
         {
@@ -158,13 +169,14 @@ public:
             case Tokeniser::Type::multiply:
                 return tokens.lhs * tokens.rhs;
             case Tokeniser::Type::division:
-                assert(tokens.rhs != 0 && "Cannot divide by zero.");
+                if (tokens.rhs == 0)
+                    return {};
                 return tokens.lhs / tokens.rhs;
             default:
                 break;
         }
         
-        return 0;
+        return {};
     }
 };
 
@@ -204,14 +216,20 @@ private:
             std::cout << "There was an error in the input string, please try again..." << std::endl;
     }
     
-    void outputAnswer(double calculatedAns) const
+    void outputAnswer(std::optional <double> possCalculatedAns) const
     {
+        if(!possCalculatedAns.has_value ())
+        {
+            std::cout<< "No Answer.\n";
+            return;
+        }
+        auto calculatedAns = possCalculatedAns.value();
         //check answer has decimal places
         auto ans = calculatedAns - int(calculatedAns);
         if(std::abs(ans) >= 0.00001)
         {
             //if so set decimal places to five
-            std::cout << "Answer: " << std::setprecision(6) << calculatedAns << std::endl;
+            std::cout << "Answer: " << std::setprecision(7) << calculatedAns << std::endl;
         } else
         {
             std::cout << "Answer: " << calculatedAns << std::endl;
@@ -239,33 +257,40 @@ void test ()
     ResultChecker::check (result->lhs, 6);
     ResultChecker::check (result->rhs, 9);
     assert (result->type == Tokeniser::Type::multiply);
-    std::cout << "1 Works\n";
     
     result = Tokeniser ().tokenise ("6 * 9");
     assert (result.has_value ());
     ResultChecker::check (result->lhs, 6);
     ResultChecker::check (result->rhs, 9);
     assert (result->type == Tokeniser::Type::multiply);
-    std::cout << "2 Works\n";
     
     result = Tokeniser ().tokenise ("25 * 4");
     assert (result.has_value ());
     ResultChecker::check (result->lhs, 25);
     ResultChecker::check (result->rhs, 4);
     assert (result->type == Tokeniser::Type::multiply);
-    std::cout << "3 Works\n";
     
     result = Tokeniser ().tokenise("10/2");
     assert(result.has_value ());
     ResultChecker::check (result->lhs, 10);
     ResultChecker::check (result->rhs, 2);
     assert (result->type == Tokeniser::Type::division);
+    
+    result = Tokeniser ().tokenise("pi * 5");
+    assert(result.has_value ());
+    ResultChecker::check (result-> lhs, 3.14159265);
+    ResultChecker::check (result-> rhs, 5);
+    assert (result->type == Tokeniser::Type::multiply);
+    
+    
 
-    ResultChecker::check (Calculator ().calculate ({ 10, 4, Tokeniser::Type::multiply }), 40);
-    std::cout << "Calc 1 Works\n";
-    ResultChecker::check (Calculator ().calculate ({ 25.3, 18.6, Tokeniser::Type::add }), 43.9);
-    std::cout << "Calc 2 Works\n";
-    ResultChecker::check (Calculator ().calculate ({ 3, 5.6, Tokeniser::Type::subtract }), -2.6);
+    ResultChecker::check (Calculator ().calculate ({ 10, 4, Tokeniser::Type::multiply }).value(), 40);
+    ResultChecker::check (Calculator ().calculate ({ 25.3, 18.6, Tokeniser::Type::add }).value(), 43.9);
+    ResultChecker::check (Calculator ().calculate ({ 3, 5.6, Tokeniser::Type::subtract }).value(), -2.6);
+    //check pi*5
+    ResultChecker::check (Calculator ().calculate ({ result->lhs, result->rhs, result->type}).value(), 15.70796);
+    
+
 }
 
 void run ()
