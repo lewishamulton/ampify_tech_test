@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <cmath>
 #include <iomanip>
-#include <stdexcept>
 
 class Tokeniser
 {
