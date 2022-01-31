@@ -61,7 +61,7 @@ private:
     double findConst(std::string input) const
     {
         if (input == "pi")
-            return 3.14159;
+            return 3.14159265359;
         if (input == "root 2")
             return 1.41421;
         return 0.0;
@@ -71,8 +71,8 @@ private:
     
     std::optional <double> findAndExtractLHS (std::string input, std::string character) const
     {
+        input.erase(std::remove_if(input.begin(), input.end(), isspace));
         auto pos = input.find (character);
-        std::remove_if(input.begin(), input.end(), isspace);
         auto anyConst = findConst(input.substr (0, pos));
         if (anyConst != 0.0)
             return anyConst;
@@ -85,7 +85,7 @@ private:
     std::optional <double> findAndExtractRHS (std::string input, std::string character) const
     {
         auto pos = input.find (character);
-        std::remove_if(input.begin(), input.end(), isspace);
+        input.erase(std::remove_if(input.begin(), input.end()-1, isspace));
         auto anyConst = findConst(input.substr (pos + 1));
         if (anyConst != 0.0)
             return anyConst;
