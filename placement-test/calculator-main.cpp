@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdlib>
 #include <cmath>
+#include <iomanip>
 
 class Tokeniser
 {
@@ -61,7 +62,7 @@ private:
     double findConst(std::string input) const
     {
         if (input == "pi")
-            return 3.14159265359;
+            return 3.14159265;
         if (input == "root 2")
             return 1.41421;
         return 0.0;
@@ -198,9 +199,25 @@ private:
     void processInput (std::string input) const
     {
         if (auto tokens = Tokeniser ().tokenise (input))
-            std::cout << "Answer: " << Calculator ().calculate (*tokens) << std::endl;
+            outputAnswer(Calculator ().calculate (*tokens));
         else
             std::cout << "There was an error in the input string, please try again..." << std::endl;
+    }
+    
+    void outputAnswer(double calculatedAns) const
+    {
+        //check answer has decimal places
+        auto ans = calculatedAns - int(calculatedAns);
+        if(std::abs(ans) >= 0.00001)
+        {
+            //if so set decimal places to five
+            std::cout << "Answer: " << std::setprecision(6) << calculatedAns << std::endl;
+        } else
+        {
+            std::cout << "Answer: " << calculatedAns << std::endl;
+        }
+            
+        
     }
 };
 
